@@ -1,6 +1,5 @@
 import inquirer from 'inquirer';
 import { pool } from './connection.js';
-
 const menu = async () => {
     const { choice } = await inquirer.prompt([
         {
@@ -43,8 +42,8 @@ const menu = async () => {
             await addDepartment();
             break;
         case 'Delete Employee':
-        await deleteEmployee();
-        break;
+            await deleteEmployee();
+            break;
         case 'Quit':
             process.exit(0);
     }
@@ -231,44 +230,39 @@ const addDepartment = async () => {
     }
     await menu();
 };
-
-    const deleteEmployee = async () => {
-        // First get all employees
-        const employees = (await pool.query('SELECT id, first_name, last_name FROM employee')).rows;
-        
-        const answer = await inquirer.prompt([
+const deleteEmployee = async () => {
+    // First get all employees
+    const employees = (await pool.query('SELECT id, first_name, last_name FROM employee')).rows;
+    const answer = await inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'removeEmployee',
+            message: 'Are you sure you want to remove this employee?'
+        }
+    ]);
+    if (answer.removeEmployee) {
+        const { employeeId } = await inquirer.prompt([
             {
-                type: 'confirm',
-                name: 'removeEmployee',
-                message: 'Are you sure you want to remove this employee?'
+                type: 'list',
+                name: 'employeeId',
+                message: 'Select the employee to remove:',
+                choices: employees.map(emp => ({
+                    name: `${emp.first_name} ${emp.last_name}`,
+                    value: emp.id
+                }))
             }
         ]);
-    
-        if (answer.removeEmployee) {
-            const { employeeId } = await inquirer.prompt([
-                {
-                    type: 'list',
-                    name: 'employeeId',
-                    message: 'Select the employee to remove:',
-                    choices: employees.map(emp => ({
-                        name: `${emp.first_name} ${emp.last_name}`,
-                        value: emp.id
-                    }))
-                }
-            ]);
-    
-            try {
-                await pool.query('DELETE FROM employee WHERE id = $1', [employeeId]);
-                console.log('Employee removed successfully!');
-            } catch (err) {
-                console.error('Error:', err);
-            }
+        try {
+            await pool.query('DELETE FROM employee WHERE id = $1', [employeeId]);
+            console.log('Employee removed successfully!');
         }
-    
-        await menu();
-    };
-
+        catch (err) {
+            console.error('Error:', err);
+        }
+    }
+    await menu();
+};
 // Start the application
 (async () => {
-   await menu(); // Display the main menu
+    await menu(); // Display the main menu
 })();
